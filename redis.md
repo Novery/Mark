@@ -47,7 +47,7 @@
 ### 环境准备
 + [Redis官网](https://Redis.io)
 + 官网提供的是linux版，github有提供window版
-+ [安装Ubuntu，提供windows的Linux子系统](source/Ubuntu.html)
++ [安装Ubuntu，提供windows的Linux子系统](https://baijiahao.baidu.com/s?id=1608773578329225793&wfr=spider&for=pc)
 
 ### 使用
 + 安装
@@ -135,9 +135,12 @@ jedis.lpush("site-list", "Taobao");
 List<String> list = jedis.lrange("site-list", 0 ,2);
 System.out.println(list);
 ```
+
+# Redis开发规范
++ [Redis开发规范](https://mp.weixin.qq.com/s/lkQsOsqY3m4V_SCGksI_BQ)
+
 # 目前项目中的情况
 + 虽然生产上配置了双机，但主要作用是备灾，保证服务的可用，在缓存的使用上没选择Redis、memcache等分布式架构下的缓存系统，而是采用了公司封装的技术框架，solar中的Cache包，其底层实现为map,其本质为一个传统的本地内存，在多实例的情况下会维护多个内存，应用场景主要是读多写少的静态数据上，当服务启动时，一次性的将db的数据写入a机、b机的缓存中，此时两边的缓存数据是一致的，当用户发起写入请求时，sds公共组件会发起一次广播，通过xnet消息中间件多播的方式发布消息，a机、b机通过订阅消息，同步的更新自己的缓存，保证两个服务内缓存的一致性，在写入请求较少的情况下，此方案有其实用性
 
-# Redis开发规范
-+ [Redis开发规范](source/redis规范.html)
+
 
