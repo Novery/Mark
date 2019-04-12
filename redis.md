@@ -49,13 +49,53 @@
 + 官网提供的是linux版，github有提供window版
 + [安装Ubuntu，提供windows的Linux子系统](https://baijiahao.baidu.com/s?id=1608773578329225793&wfr=spider&for=pc)
 
-### 使用
+### 安装
 + 安装
+  + 安装分为apt-get和一般的安装方式
++ apt-get
 ```
 apt-get update
 
 apt-get install Redis-server
 ```
++ 一般方式
+  + Redis是c开发的，需要c语言编译环境
+```
+gcc -v
+```
++ 如何没有gcc,需要在线安装
++ wget默认安装路径在执行wget命令的当前目录
+```
+yum install gcc-c++
+$ wget http://download.redis.io/releases/redis-5.0.4.tar.gz
+```
++ 解压
+```
+$ tar xzf redis-5.0.4.tar.gz
+```
++ cd到对应目录
+```
+$ cd redis-5.0.4
+```
++ 编译
++ linux里大部分软件都是开源的，都是让你把c代码拉下来，自己make）
++ make完后 redis-5.0.4目录下会出现编译后的redis服务程序redis-server,还有用于测试的客户端程序redis-cli,两个程序位于安装目录 src 目录下
++ 编译通过会出现It's a good idea to run 'make test' ;)
+```
+$ make
+```
++ 安装并指定安装目录
+```
+make install PREFIX=/usr/local/redis
+```
+
+### 使用
++ 启动redis服务.（makefile方式需要手工启动，apt-get不需要）
++ cd到usr/local/redis/bin
+```
+$ ./redis-server
+```
+
 + 查看是否启动
 ```
 ps -aux|grep Redis
@@ -63,11 +103,15 @@ ps -aux|grep Redis
 + 查看版本
 ```
 Redis-server -v
-
 ```
-+ 通过命令行客户端访问Redis
++ 通过命令行客户端访问Redis（apt）
 ```
 Redis-cli
+```
++ 通过命令行客户端访问Redis（make）
++ cd到usr/local/redis/bin
+```
+./redis-cli
 ```
 + 修改配置文件
 ```
@@ -86,6 +130,123 @@ set key1 "hello"
 + 查看字符串记录
 ```
 get key1
+```
+### 集群搭建
+
+****Redis Cluster（Redis集群）简介****
+
++ redis3.0版本之前只支持单例模式，在3.0版本及以后才支持集群
++ redis集群采用P2P模式，是完全去中心化的，不存在中心节点或者代理节点
++ reids集群无统一入口，客户端连接任意节点即可，节点是相互通信的（PING-PONG机制），每个节点是一个redis实例
++ 健康检查，当超过半数节点认为某节点挂了，则该节点被判断为挂了
++ 当任意一个节点挂了，而且该节点没有从节点（备份节点），那么这个集群就挂了
+
+****集群搭建需要的环境****
++ 需要三个节点，因为容错机制需要半数以上的节点通过判断节点是否健康
++ 要保证高可用，每个节点需要从节点(备份)
++ 安装ruby
+
+****步骤****
++ usr/local下新建文件夹，用于存放集群节点
+```
+sudo mkdir redis-cluster
+```
++ 把wget下载下的源码目录下的redis.conf复制到/usr/local/redis-cluster/redis01目录下
+```
+cp -r redis.conf ../../../usr/local/redis-cluster/redis01
+```
++ 删除redis01目录下的快照文件dump.rdb，并且修改该目录下的redis.cnf文件，具体修改两处地方：一是端口号修改为7001，二是开启集群创建模式
+```
+rm -rf dump.rdb
+vi命令分命令行模式和输入模式，按i进入输入模式，按ESC键退回命令行模式
+命令行模式  ‘/’可查询内容
+```
++ redis.cnf修改port，将cluster-enabled yes的注释打开，将cluster-config-file
+```
+:wq 保存退出
+:q! 退出不保存
+```
++ 制作启动shell脚本
++ 赋权限 sudo chmod +x redis-start.sh
++ touch 文件名/新建文件
+```
+sudo ./redis/bin/redis-server redis-cluster/redis01/redis.conf &
+sudo ./redis/bin/redis-server redis-cluster/redis02/redis.conf &
+sudo ./redis/bin/redis-server redis-cluster/redis03/redis.conf &
+sudo ./redis/bin/redis-server redis-cluster/redis04/redis.conf &
+sudo ./redis/bin/redis-server redis-cluster/redis05/redis.conf &
+sudo ./redis/bin/redis-server redis-cluster/redis06/redis.conf
+```
++ 查看服务启动
+```
+ps aux|grep redis
+```
++ 安装ruby环境
+```
+sudo apt-get install ruby
+```
++ 将ruby脚本工具复制到usr/local/redis-cluster目录下
++ cd到redis源码src目录下
+```
+cp -r redis-trib.rb ../../../../usr/local/redis-cluster
+```
++ 执行ruby脚本
+```
+./redis-trib.rb create --replicas 1 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 127.0.0.1:7006
+```
++ redis5.0不需要使用ruby了，功能移到redis-cli
++ 最后一段文字，记录了每个节点分配的slots（哈希槽）
+```
+./redis/bin/redis-cli --cluster create --cluster-replicas 1  127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 127.0.0.1:7006 
+```
++ 
+
+
++ 关闭服务
+```
+sudo  pkill -9 redis
+```
+
+****代办问题****
++ reids同个接口可以实例化多次
++ sudo  pkill -9 redis含义
+
+### 卸载
++ apt-get方式安装的
+```
+sudo apt-get purge --auto-remove redis-server
+```
++ make方式安装的
+```
+关闭已经启动的 Redis 服务，注意，你可能启动了多个实例，所以可能要逐个关闭，我这里的情况只有 redis_6379 在运行：
+
+sudo service redis_6379 stop
+
+删除 usr/local/bin/ 中所有 redis 相关的文件
+
+sudo rm /usr/local/bin/redis-*
+
+删除配置目录和内容
+
+sudo rm -r /etc/redis/
+
+删除日志
+
+sudo rm /var/log/redis_*
+
+删除数据目录和内容
+
+sudo rm -r /var/lib/redis/
+
+删除初始化脚本
+
+sudo rm /etc/init.d/redis_*
+
+删除现有的Redis PID文件(仅当存在时)
+
+sudo rm /var/run/redis_*
+
+重启服务器
 ```
 ### 客户端安装(Redisdesktopmanager)
 + 除了Redis自带的命令行客户端还可以使用其他客户端
@@ -141,6 +302,4 @@ System.out.println(list);
 
 # 目前项目中的情况
 + 虽然生产上配置了双机，但主要作用是备灾，保证服务的可用，在缓存的使用上没选择Redis、memcache等分布式架构下的缓存系统，而是采用了公司封装的技术框架，solar中的Cache包，其底层实现为map,其本质为一个传统的本地内存，在多实例的情况下会维护多个内存，应用场景主要是读多写少的静态数据上，当服务启动时，一次性的将db的数据写入a机、b机的缓存中，此时两边的缓存数据是一致的，当用户发起写入请求时，sds公共组件会发起一次广播，通过xnet消息中间件多播的方式发布消息，a机、b机通过订阅消息，同步的更新自己的缓存，保证两个服务内缓存的一致性，在写入请求较少的情况下，此方案有其实用性
-
-
 
