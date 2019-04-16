@@ -200,12 +200,14 @@ cp -r redis-trib.rb ../../../../usr/local/redis-cluster
 ```
 ./redis/bin/redis-cli --cluster create --cluster-replicas 1  127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 127.0.0.1:7004 127.0.0.1:7005 127.0.0.1:7006 
 ```
-+ 
-
 
 + 关闭服务
 ```
 sudo  pkill -9 redis
+```
++ 关闭集群
+```
+/usr/local/redis/bin/redis-cli -c -h 127.0.0.1 -p 7001 shutdown
 ```
 
 ****代办问题****
