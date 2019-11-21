@@ -47,8 +47,8 @@
 + servlet3.0后提供了对异步的支持，使Servlet 线程不再需要一直阻塞，直到业务处理完毕才能再输出响应，最后才结束该 Servlet 线程。在接收到请求之后，Servlet 线程可以将耗时的操作委派给另一个线程来完成，自己在不生成响应的情况下返回至容器
 + ServletRequest实例提供的startAsync()开启异步，同时返回异步上下文（AsyncContext），存储了servlet原生的request与response，实例存储在线程副本，无需担心请求间数据读写串了，但要注意在子线程或线程池中获取的线程中无法获得该实例
 + AsyncContext实例提供的
-  + complete()结束异步请求
-  + dispatch（）重定位
+  + complete( )结束异步请求
+  + dispatch（）调派指定的URL进行响应
   + setTimeout 异步超时时间，开启异步后，超过预设时间容器会抛出timeout异常
 ```
  @Resource
