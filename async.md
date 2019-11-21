@@ -19,7 +19,7 @@
 + HexinFutureCallback
   + 执行回调
 + HttpAsyncProcessor
-  + 向客户端提供的接口，支持post、get方式的异步调用 
+  + 向客户端提供接口，支持post、get方式的异步调用 
 ### 组件依赖
 #### HttpAsyncClient
 + 异步http客户端，httpclient在4.x之后开始提供基于nio的异步版本
