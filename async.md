@@ -50,7 +50,7 @@
   + complete( )结束异步请求
   + dispatch（）调派指定的URL进行响应
   + setTimeout 异步超时时间，开启异步后，超过预设时间容器会抛出timeout异常
-```
+```java
  @Resource
  private HttpServletRequest servletRequest
  ...
@@ -63,7 +63,7 @@ AsyncContext context = servletRequest.startAsync();
 ```
 # 开始使用
 ### 异步httpClient/httpProcessor初始化
-```
+```java
 @Bean
 public HttpAsyncClient httpAsyncClientConfig() throws Exception{
     HttpAsyncConnectionPoolConfig httpAsyncConnectionPoolConfig = new HttpAsyncConnectionPoolConfig();
@@ -85,7 +85,7 @@ public HttpAsyncProcessor httpAsyncProcessorConfig() throws Exception {
 ```
 + httpConfig中，异步特有的ioThreadCount指调度（dispatch）线程数量，selectInterval指会话超时检查的间隔时间，注意，过多的调度线程或者selectInterval设置过短而导致的频繁唤醒调度线程检查超时会导致cpu负载过高，建议线程数设置为cpu核数或者核数*2
 + HttpAsyncProcessor提供了对http调用的基本封装，并对外提供了统一的API，获取HttpAsyncProcessor实例，并通过提供的API执行异步调用
-```
+```java
  @Resource
  private HttpAsyncProcessor httpAsyncProcessor
  ...
@@ -100,7 +100,7 @@ httpAsyncProcessor.sendAsyncRequest(routeConfig, postParam, hexinFutureCallback)
 ### 编写自定义的调度上下文
 + 异步调用在执行时可能会涉及几次逻辑相关的请求-响应，需要特定的容器来保留状态信息，使应用程序能维持处理状态
 + 通过实现组件提供的抽象类DispatcherContext，可以很好的扩展除response，request外需要在请求周期中保持的对象，需要注意上下文中的内容，可能在多个线程之间共享，需要保证线程安全
-```
+```java
 public class ControlDiapatcherContext extends DispatcherContext{
     // 异步调用后响应的内容
     private List<ResultObject> result0bjectList = new Vector<>();
@@ -118,7 +118,7 @@ public class ControlDiapatcherContext extends DispatcherContext{
   + 当请求过程中抛出异常时，包括超时等其他受检查或运行期异常，执行failed方法
   + 根据业务需求重写completed、failed，根据httpcore官方教程中的建议，尽量卸载掉一些诸如同步阻塞IO以及时间复杂度较高的运算，用以提升调度线程处理能力，回调逻辑是通过调度线程驱动的，最好在回调中用额外的业务线程处理业务逻辑
 + HexinFutureCallback组合了DispatcherContext
-```
+```java
 @Override
  public void completed(HttpResponse response){
     try {
