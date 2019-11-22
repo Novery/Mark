@@ -62,7 +62,7 @@ AsyncContext context = servletRequest.startAsync();
 
 ```
 # 开始使用
-#### 异步httpClient/httpProcessor初始化
+### 异步httpClient/httpProcessor初始化
 ```
 @Bean
 public HttpAsyncClient httpAsyncClientConfig() throws Exception{
@@ -97,7 +97,7 @@ httpAsyncProcessor.sendAsyncRequest(routeConfig, postParam, hexinFutureCallback)
 
 
 ```
-#### 编写自定义的调度上下文
+### 编写自定义的调度上下文
 + 异步调用在执行时可能会涉及几次逻辑相关的请求-响应，需要特定的容器来保留状态信息，使应用程序能维持处理状态
 + 通过实现组件提供的抽象类DispatcherContext，可以很好的扩展除response，request外需要在请求周期中保持的对象，需要注意上下文中的内容，可能在多个线程之间共享，需要保证线程安全
 ```
@@ -111,12 +111,12 @@ public class ControlDiapatcherContext extends DispatcherContext{
     ...   
 } 
 ```
-#### HexinFutureCallback
+### HexinFutureCallback
 + httpcore提供了与netty类似回调的机制，提供了FutureCallback接口，组件在此基础上提供了HexinFutureCallback
 + HexinFutureCallback已提供了回调的简单实现
   + 当成功获取响应时，包括http code为非200的报文，执行completed方法，获取异步请求响应的实体对象response，解码，将结果冲刷到response，响应调用方，结束异步请求
   + 当请求过程中抛出异常时，包括超时等其他受检查或运行期异常，执行failed方法
-  + 根据业务需求重写completed、failed
+  + 根据业务需求重写completed、failed，根据httpcore官方教程中的建议，尽量卸载掉一些诸如同步阻塞IO以及时间复杂度较高的运算，用以提升调度线程处理能力，回调逻辑是通过调度线程驱动的，最好在回调中用额外的业务线程处理业务逻辑
 + HexinFutureCallback组合了DispatcherContext
 ```
 @Override
@@ -139,3 +139,6 @@ public void failed (Exception e) {
 }
 
 ```
+# 可能的异常
++ 在使用组件实现异步后，控制台出现MUST_ERROR错误，此状态根据tomcat官方文档显示为IO异常时阻止异步继续返回
++ 执行pw.close()出现空指针异常，根据堆栈信息，如果报错源头为org.apache.coyote.http11.Http11OutputBuffer.commit(Http11OutputBuffer.java:347)[tomcat-embed-core-8.5.32]，原因为发生连接断开时，会执行Http11OutputBuffer.recycle()回收方法使socketWrapper引用指向空，导致的空指针异常
