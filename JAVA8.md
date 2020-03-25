@@ -2,6 +2,34 @@
 ### 接口默认方法
 + 接口可以通过default关键字添加非抽象方法
 ### Lambda表达式
++ 一些语言一开始就支持Lambda,比如.net
++ 逗号分隔的参数列表、–>符号与函数体三部分表示
+### 方法引用
++ 静态、构造（类::方法）
+### 重复注解
++ 重复注解机制本身必须用@Repeatable注解
+### 类型推断
++ 使用泛型接口时，原来需要指定泛型
+### 类库的新特性
++ Optional
++ Stream，简化了集合框架的处理
+  + Stream API不仅仅处理Java集合框架。像从文本文件中逐行读取数据这样典型的I/O操作也很适合用Stream API
+  +  Stream< String > lines = Files.lines( path, StandardCharsets.UTF_8 )
+### JavaScript引擎
++ 然而巨坑，导致了一次线上OOM
+### ConcurrentHashMap
++ 大量的利用了volatile，final，CAS等lock-free技术来减少锁竞争对于性能的影响
++  内存位置（V）、预期原值（A）和新值(B)。如果内存地址里面的值和A的值是一样的，那么就将内存里面的值更新成B。CAS是通过无限循环来获取数据的，若果在第一轮循环中，a线程获取地址里面的值被b线程修改了，那么a线程需要自旋，到下次循环才有可能机会执行。
++ 1.7 分段锁+数组 1.8 放弃了Segment转而采用的是Node，其设计思想也不再是JDK1.7中的分段锁思想
++ 1.8结构上也加上了红黑树，意味着查询更快 
+### HashMap
++ JDK1.7用的是头插法(并发情况下导致死链)，而JDK1.8及之后使用的都是尾插法
++ JDK1.7的时候使用的是数组+ 单链表的数据结构。但是在JDK1.8及之后时，使用的是数组+链表+红黑树的数据结构
+
+### 元空间
++ 永久代被移除，换成元空间，使用直接内存
+
+### Lambda表达式
 #### 简化代码
 + 老版对java字符串排序
 ```java
@@ -188,6 +216,8 @@ list.stream().sorted(Comparator.comparing(Student::getAge))
 list.stream().sorted(Comparator.comparing(Student::getAge).reversed()) 
 ```
 + forEachOrdered和forEach
-  + forEach是并行的（输出结果不严格按照顺序，但效率快），forEachOrder是串行的
+  + 
 + Java8中对java.util.Comparator 和 Map.Entry 增加了新的方法用来排序。可以对HashMap, HashSet, HashTable, LinkedHashMap, TreeMap, 甚至ConcurrentHashMap都可以排序。基本思路就是先拿到集合，可以用entrySet()方法得到。然后调用stream方法，里面就可以调用sort方法了
   + map.entrySet.stream().sorted(Collections.reverseOrder(Map.Enry.comparingByValue()))(对value进行排序)
++ parallelStream是并行执行的stream
++ List<String> collect = staff.stream().map(x -> x.getName()).collect(Collectors.toList());

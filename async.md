@@ -4,7 +4,7 @@
 + 基于非阻塞NIO的公共组件
 ### 组件目标
 + http调用的基本封装
-+ 异步调用的支持
++ 异步调用的支持，解放线程资源
 # 基本概念
 ### 同步与异步（synchronous/asynchronous）
 + 同步是一种可靠的有序运行机制，当我们进行同步操作时，后续的任务是等待当前调用返回，才会进行下一步；而异步则相反，其他任务不需要等待当前调用返回，通常依靠事件、回调等机制来实现任务间次序关系
@@ -19,7 +19,7 @@
 + HexinFutureCallback
   + 执行回调
 + HttpAsyncProcessor
-  + 向客户端提供接口，支持post、get方式的异步调用 
+  + 向客户端提供的接口，支持post、get方式的异步调用 
 ### 组件依赖
 #### HttpAsyncClient
 + 异步http客户端，httpclient在4.x之后开始提供基于nio的异步版本
@@ -47,10 +47,10 @@
 + servlet3.0后提供了对异步的支持，使Servlet 线程不再需要一直阻塞，直到业务处理完毕才能再输出响应，最后才结束该 Servlet 线程。在接收到请求之后，Servlet 线程可以将耗时的操作委派给另一个线程来完成，自己在不生成响应的情况下返回至容器
 + ServletRequest实例提供的startAsync()开启异步，同时返回异步上下文（AsyncContext），存储了servlet原生的request与response，实例存储在线程副本，无需担心请求间数据读写串了，但要注意在子线程或线程池中获取的线程中无法获得该实例
 + AsyncContext实例提供的
-  + complete( )结束异步请求
-  + dispatch（）调派指定的URL进行响应
+  + complete()结束异步请求
+  + dispatch（）重定位
   + setTimeout 异步超时时间，开启异步后，超过预设时间容器会抛出timeout异常
-```java
+```
  @Resource
  private HttpServletRequest servletRequest
  ...
@@ -62,8 +62,8 @@ AsyncContext context = servletRequest.startAsync();
 
 ```
 # 开始使用
-### 异步httpClient/httpProcessor初始化
-```java
+#### 异步httpClient/httpProcessor初始化
+```
 @Bean
 public HttpAsyncClient httpAsyncClientConfig() throws Exception{
     HttpAsyncConnectionPoolConfig httpAsyncConnectionPoolConfig = new HttpAsyncConnectionPoolConfig();
@@ -85,7 +85,7 @@ public HttpAsyncProcessor httpAsyncProcessorConfig() throws Exception {
 ```
 + httpConfig中，异步特有的ioThreadCount指调度（dispatch）线程数量，selectInterval指会话超时检查的间隔时间，注意，过多的调度线程或者selectInterval设置过短而导致的频繁唤醒调度线程检查超时会导致cpu负载过高，建议线程数设置为cpu核数或者核数*2
 + HttpAsyncProcessor提供了对http调用的基本封装，并对外提供了统一的API，获取HttpAsyncProcessor实例，并通过提供的API执行异步调用
-```java
+```
  @Resource
  private HttpAsyncProcessor httpAsyncProcessor
  ...
@@ -97,10 +97,10 @@ httpAsyncProcessor.sendAsyncRequest(routeConfig, postParam, hexinFutureCallback)
 
 
 ```
-### 编写自定义的调度上下文
+#### 编写自定义的调度上下文
 + 异步调用在执行时可能会涉及几次逻辑相关的请求-响应，需要特定的容器来保留状态信息，使应用程序能维持处理状态
 + 通过实现组件提供的抽象类DispatcherContext，可以很好的扩展除response，request外需要在请求周期中保持的对象，需要注意上下文中的内容，可能在多个线程之间共享，需要保证线程安全
-```java
+```
 public class ControlDiapatcherContext extends DispatcherContext{
     // 异步调用后响应的内容
     private List<ResultObject> result0bjectList = new Vector<>();
@@ -111,14 +111,14 @@ public class ControlDiapatcherContext extends DispatcherContext{
     ...   
 } 
 ```
-### HexinFutureCallback
+#### HexinFutureCallback
 + httpcore提供了与netty类似回调的机制，提供了FutureCallback接口，组件在此基础上提供了HexinFutureCallback
 + HexinFutureCallback已提供了回调的简单实现
   + 当成功获取响应时，包括http code为非200的报文，执行completed方法，获取异步请求响应的实体对象response，解码，将结果冲刷到response，响应调用方，结束异步请求
   + 当请求过程中抛出异常时，包括超时等其他受检查或运行期异常，执行failed方法
-  + 根据业务需求重写completed、failed，根据httpcore官方教程中的建议，尽量卸载掉一些诸如同步阻塞IO以及时间复杂度较高的运算，用以提升调度线程处理能力，回调逻辑是通过调度线程驱动的，最好在回调中用额外的业务线程处理业务逻辑
+  + 根据业务需求重写completed、failed
 + HexinFutureCallback组合了DispatcherContext
-```java
+```
 @Override
  public void completed(HttpResponse response){
     try {
@@ -139,6 +139,3 @@ public void failed (Exception e) {
 }
 
 ```
-# 可能的异常
-+ 在使用组件实现异步后，控制台出现MUST_ERROR错误，此状态根据tomcat官方文档显示为IO异常时阻止异步继续返回
-+ 执行pw.close()出现空指针异常，根据堆栈信息，如果报错源头为org.apache.coyote.http11.Http11OutputBuffer.commit(Http11OutputBuffer.java:347)[tomcat-embed-core-8.5.32]，原因为发生连接断开时，会执行Http11OutputBuffer.recycle()回收方法使socketWrapper引用指向空，导致的空指针异常
