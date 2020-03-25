@@ -129,3 +129,65 @@ public void setName(String name) throws IllegalArgumentException {
 }
 
 ```
+#### Comparator接口实现排序
++ 对任意类型集合对象进行排序
++ 将此接口实现传递给Collections.sort或者Arrays.sort
++ 实现int compare(T o1,T o2),返回正数，零，负数分别表示大于，等于，小于
+```
+List<Student> stus = new ArrayList<Student>(){
+			{
+				add(new Student("张三", 30));	
+				add(new Student("李四", 20));	
+				add(new Student("王五", 60));	
+			}
+		};
+		//对users按年龄进行排序
+		Collections.sort(stus, new Comparator<Student>() {
+
+			@Override
+			public int compare(Student s1, Student s2) {
+				// 升序
+				//return s1.getAge()-s2.getAge();
+				return s1.getAge().compareTo(s2.getAge());
+				// 降序
+				// return s2.getAge()-s1.getAge();
+				// return s2.getAge().compareTo(s1.getAge());
+			}
+		});
+		// 输出结果
+		...
+```
++ 使用lambda表达式简化
+```
+List<Student> stus = new ArrayList<Student>(){
+			{
+				add(new Student("张三", 30));	
+				add(new Student("李四", 20));	
+				add(new Student("王五", 60));	
+			}
+		};
+		//对users按年龄进行排序
+		Collections.sort(stus, (s1,s2)->(s1.getAge()-s2.getAge()));
+```
+
+#### stream
++ 自然序排序一个list
+```
+list.stream().sorted() 
+```
++ 自然序逆序元素，使用Comparator 提供的reverseOrder() 方法
+```
+list.stream().sorted(Comparator.reverseOrder()) 
+```
++ 使用Comparator 来排序一个list
+```
+list.stream().sorted(Comparator.comparing(Student::getAge)) 
+```
++ 把上面的元素逆序
+```
+list.stream().sorted(Comparator.comparing(Student::getAge).reversed()) 
+```
++ forEachOrdered和forEach
+  + forEach是并行的（输出结果不严格按照顺序，但效率快），forEachOrder是串行的
++ Java8中对java.util.Comparator 和 Map.Entry 增加了新的方法用来排序。可以对HashMap, HashSet, HashTable, LinkedHashMap, TreeMap, 甚至ConcurrentHashMap都可以排序。基本思路就是先拿到集合，可以用entrySet()方法得到。然后调用stream方法，里面就可以调用sort方法了
+  + map.entrySet.stream().sorted(Collections.reverseOrder(Map.Enry.comparingByValue()))(对value进行排序)
