@@ -86,11 +86,31 @@ public interface Processor<T, R> extends Subscriber<T>, Publisher<R> {
 + Scheduler 表示背后驱动反应式流的调度器，通常由各种线程池实现。
 # WebFlux
 + Spring 5 引入的一个基于 Netty 而不是 Servlet 的高性能的 Web 框架
-+ 实际上后续的Spring Cloud Gateway，也是在WebFlux上做的封装
+### 客户端
++ WebClient
+```java
+public class RESTClient {
+    public static void main(final String[] args) {
+        final User user = new User();
+        user.setName("Test");
+        user.setEmail("test@example.org");
+        final WebClient client = WebClient.create("http://localhost:8080/user");
+        final Monol<User> createdUser = client.post()
+                .uri("")
+                .accept(MediaType.APPLICATION_JSON)
+                .body(Mono.just(user), User.class)
+                .exchange()
+                .flatMap(response -> response.bodyToMono(User.class));
+        System.out.println(createdUser.block());
+    }
+}
+```
+
 # 应用场景
 + 反应式编程无法大规模普及，一个很重要的原因是并不是所有库都支持反应式编程，当一些类库只能同步调用时，就无法达到节约性能的作用
 + Reactive Streams的推出统一了反应式编程的规范，并且已经被Java9集成。由此，不同的库可以互操作了，互操作性是一个重要的多米诺骨牌。
 + 例如，MongoDB实现了Reactive Streams驱动程序后，我们可以使用Reactor或RxJava来使用MongoDB中的数据。
++ Spring Cloud Gateway
   
 
 
